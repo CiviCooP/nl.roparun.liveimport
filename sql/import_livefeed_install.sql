@@ -1,0 +1,30 @@
+DROP TABLE IF EXISTS `import_livefeed`
+;
+CREATE TABLE `import_livefeed` (
+  `roparunid` varchar(12)  NOT NULL ,
+  `team` int(11) DEFAULT NULL,
+  `naam` varchar(100) DEFAULT NULL,
+  `functie` varchar(50) DEFAULT NULL,
+  `voornaam` varchar(50) DEFAULT NULL,
+  `tussenvoegsel` varchar(50) DEFAULT NULL,
+  `achternaam` varchar(100) DEFAULT NULL,
+  `meisjesnaamtussenvoegsel` varchar(50) DEFAULT NULL,
+  `meisjesnaam` varchar(50) DEFAULT NULL,
+  `geslacht` varchar(50) DEFAULT NULL,
+  `straat` varchar(200) DEFAULT NULL,
+  `huisnummer` varchar(50) DEFAULT NULL,
+  `postcode` varchar(50) DEFAULT NULL,
+  `plaats` varchar(52) DEFAULT NULL,
+  `land` varchar(50) DEFAULT NULL,
+  `geboortedatum` varchar(20) DEFAULT NULL,
+  `telefoon` varchar(20) DEFAULT NULL,
+  `waarschuwen_igv_nood` varchar(100) DEFAULT NULL,
+  `telefoon_igv_nood` varchar(20) DEFAULT NULL,
+  `verzekeringsnummer` varchar(100) DEFAULT NULL,
+  `bijzonderheden` varchar(255) DEFAULT NULL,
+  `tonenalsdeelnemer` varchar(50) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `processed` varchar(1) NOT NULL default 'N',
+  `message`   varchar(2000) default NULL,
+  PRIMARY KEY (`roparunid`)
+);

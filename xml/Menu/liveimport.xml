@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/liveimport/upload</path>
+    <page_callback>CRM_Liveimport_Form_Upload</page_callback>
+    <title>Upload</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/liveimport/uploadresult</path>
+    <page_callback>CRM_Liveimport_Page_UploadResult</page_callback>
+    <title>UploadResult</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
+</menu>

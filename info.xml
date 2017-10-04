@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<extension key="nl.roparun.liveimport" type="module">
+  <file>liveimport</file>
+  <name>RopaRun Live Import</name>
+  <description>
+    Imports the live data from the RopaRun team site
+  </description>
+  <license>AGPL-3.0</license>
+  <maintainer>
+    <author>Klaas Eikelboom</author>
+    <email>klaas@civicoop.org</email>
+  </maintainer>
+  <urls>
+    <url desc="Main Extension Page">https://github.com/CiviCooP/nl.roparun.liveimport</url>
+    <url desc="Documentation">https://github.com/CiviCooP/nl.roparun.liveimport</url>
+    <url desc="Support">https://github.com/CiviCooP/nl.roparun.liveimport</url>
+    <url desc="Licensing">http://www.gnu.org/licenses/agpl-3.0.html</url>
+  </urls>
+  <releaseDate>2017-10-04</releaseDate>
+  <version>1.0</version>
+  <develStage>alpha</develStage>
+  <compatibility>
+    <ver>4.7</ver>
+  </compatibility>
+  <comments>This is a new, undeveloped module</comments>
+  <civix>
+    <namespace>CRM/Liveimport</namespace>
+  </civix>
+</extension>
