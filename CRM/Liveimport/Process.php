@@ -19,6 +19,21 @@ class CRM_Liveimport_Process {
     ));
     return array(ceil($calcRows / CRM_Liveimport_Process::STEP_SIZE), CRM_Liveimport_Process::STEP_SIZE);
   }
+	
+	public static function calcFinishSteps() {
+		$config = CRM_Liveimport_Config::singleton();
+		$event_id = CRM_Liveimport_DBUtils::getCurrentRoparunEventId();
+		// Cancel all registration of teammebers who are not in the import feed.
+		$sql = "SELECT COUNT(*) 
+				FROM civicrm_participant
+				WHERE civicrm_participant.role_id = %1 AND civicrm_participant.status_id = %2 AND civicrm_participant.event_id = %3
+				";
+		$params[1] = array($config->getParticipantRoleId(), 'Integer');
+		$params[2] = array($config->getRegisteredParticipantStatusTypeId(), 'Integer');
+		$params[3] = array($event_id, 'Integer');
+		$calcRows = CRM_Core_DAO::singleValueQuery($sql, $params);
+		return array(ceil($calcRows / CRM_Liveimport_Process::STEP_SIZE), CRM_Liveimport_Process::STEP_SIZE);
+	}
 
 
   public static function importContact($dao,&$errors){
@@ -27,14 +42,29 @@ class CRM_Liveimport_Process {
 
     $config = CRM_Liveimport_Config::singleton();
     $apiParams = [];
-    $contact_id = CRM_Liveimport_DBUtils::findExternalIdentifier($dao->roparunid);
     if ($contact_id) {
       $apiParams['id'] = $contact_id;
+    } else {
+    	// Try to find contact based on name and birth data
+    	$apiGetParams['birth_date'] = $dao->geboortedatum;
+	    CRM_Utils_Date::convertToDefaultDate($apiGetParams, 32, 'birth_date');
+	    $apiGetParams['first_name'] = $dao->voornaam;
+	    $apiGetParams['middle_name'] = $dao->tussenvoegsel;
+	    $apiGetParams['last_name'] = CRM_Liveimport_DBUtils::formatName($dao->achternaam,$dao->meisjesnaamtussenvoegsel,$dao->meisjesnaam);
+	    $apiGetParams['contact_type'] = 'Individual';
+			try {
+				$count = civicrm_api3('Contact', 'getcount', $apiGetParams);
+				if ($count) {
+					$apiGetParams['return'] = 'id';
+					$apiParams['id'] = civicrm_api3('Contact', 'getvalue', $apiGetParams);
+				}
+			} catch (Exception $e) {
+				// Do nothing contact not found.
+			}
     }
 
     $apiParams['birth_date'] = $dao->geboortedatum;
     CRM_Utils_Date::convertToDefaultDate($apiParams, 32, 'birth_date');
-    $apiParams['external_identifier'] = $dao->roparunid;
     $apiParams['first_name'] = $dao->voornaam;
     $apiParams['middle_name'] = $dao->tussenvoegsel;
     $apiParams['last_name'] = CRM_Liveimport_DBUtils::formatName($dao->achternaam,$dao->meisjesnaamtussenvoegsel,$dao->meisjesnaam);
@@ -130,20 +160,31 @@ class CRM_Liveimport_Process {
 
   }
 
-  public static function importParticipant($dao,$contact_id,&$errors){
+  public static function importParticipant($dao,$contact_id,$participantId,&$errors){
 
     $config = CRM_Liveimport_Config::singleton();
-    $event_id=1;
+    $event_id = CRM_Liveimport_DBUtils::getCurrentRoparunEventId();
 
     $partParams['contact_id'] = $contact_id;
     $partParams['event_id'] = $event_id;
 
-    $participantId = CRM_Liveimport_DBUtils::findParticipant($event_id, $contact_id);
     if ($participantId) {
       $partParams['id'] = $participantId;
     }
 
     $partParams['role_id'] = $config->getParticipantRoleId();
+		$partParams['status_id'] = $config->getRegisteredParticipantStatusTypeId();
+		$partParams['campaign_id'] = CRM_Liveimport_DBUtils::getRoparunCampaignId($event_id);
+		$partParams['custom_' . $config->getTeammemberNrCustomFieldId()] = $dao->roparunid;
+		$partParams['custom_' . $config->getShowOnWebsiteCustomFieldId()] = 1;
+		$partParams['custom_' . $config->getShowOnDonationFormCustomFieldId()] = 1;
+		if (strtolower($dao->tonenalsdeelnemer) != 'ja') {
+			if (!CRM_Liveimport_DBUtils::countExistingDonationsForTeamMember($event_id, $contact_id)) {
+				// Set show on website to false when there are no donations on this teammember. Otherwise we keep show on website.
+				$partParams['custom_' . $config->getShowOnWebsiteCustomFieldId()] = 0; 		
+			}
+			$partParams['custom_' . $config->getShowOnDonationFormCustomFieldId()] = 0;	
+		}
 
     if (isset($dao->functie)) {
       $partParams['custom_' . $config->getTeamRolCustomFieldId()] = $dao->functie;
@@ -164,15 +205,41 @@ class CRM_Liveimport_Process {
     }
   }
 
+	private static function findParticipantIdBasedOnRoparunId($roparunid, &$errors) {
+		
+		$config = CRM_Liveimport_Config::singleton();
+		$event_id = CRM_Liveimport_DBUtils::getCurrentRoparunEventId();
+		
+		try {
+			return civicrm_api3('Participant', 'getvalue', array(
+				'return' => 'id',
+				'custom_' . $config->getTeammemberNrCustomFieldId() => $roparunid,
+				'event_id' => $event_id,
+				'role_id' => $config->getParticipantRoleId(),
+			));
+		} catch (Exception $ex) {
+			return false;
+		}
+		return false;
+	}
+
   private static function processRecord($dao){
 
     try {
       $errors = array();
-      $contact_id = CRM_Liveimport_Process::importContact($dao,$errors);
+			// Find existing contact based the roparunid. 
+			// The roparunid is stored in a custom field at the partcipant record.
+			$participant_id = CRM_Liveimport_Process::findParticipantIdBasedOnRoparunId($dao->roparunid, $errors);
+			$contact_id = false;
+			if ($participant_id) {
+				$contact_id = civicrm_api3('Participant', 'getvalue', array('id' => $participant_id, 'return' => 'contact_id'));
+			}
+			
+      $contact_id = CRM_Liveimport_Process::importContact($dao,$contact_id, $errors);
       CRM_Liveimport_Process::importAddress($dao, $contact_id,$errors);
       CRM_Liveimport_Process::importPhone($dao, $contact_id,$errors);
       CRM_Liveimport_Process::importEmail($dao, $contact_id,$errors);
-      CRM_Liveimport_Process::importParticipant($dao, $contact_id,$errors);
+      CRM_Liveimport_Process::importParticipant($dao, $contact_id, $participant_id, $errors);
       $roparunid = $dao->roparunid;
       if(empty($errors)){
          CRM_Core_DAO::executeQuery('UPDATE import_livefeed SET message=%2, processed=%3 where roparunid=%1', array(
@@ -195,6 +262,39 @@ class CRM_Liveimport_Process {
     };
 
 
+  }
+
+	public static function processFinish(CRM_Queue_TaskContext $ctx){
+		$config = CRM_Liveimport_Config::singleton();
+		$event_id = CRM_Liveimport_DBUtils::getCurrentRoparunEventId();
+		// Cancel all registration of teammebers who are not in the import feed.
+		$sql = "SELECT civicrm_participant.id, civicrm_participant.contact_id 
+				FROM civicrm_participant
+				INNER JOIN {$config->getTeamMemberDataCustomGroupTableName()} team_member_data ON team_member_data.entity_id = civicrm_participant.id
+				WHERE civicrm_participant.role_id = %1 AND civicrm_participant.status_id = %2 AND civicrm_participant.event_id = %3
+				AND team_member_data.{$config->getTeammemberNrCustomFieldColumnName()} NOT IN (SELECT roparunid FROM import_livefeed WHERE processed = 'P')
+				LIMIT %4";
+		$params[1] = array($config->getParticipantRoleId(), 'Integer');
+		$params[2] = array($config->getRegisteredParticipantStatusTypeId(), 'Integer');
+		$params[3] = array($event_id, 'Integer');
+		$params[4] = array(CRM_Liveimport_Process::STEP_SIZE, 'Integer');
+		
+    $dao = CRM_Core_DAO::executeQuery($sql, $params);
+    try {
+      while ($dao->fetch()) {
+        $participantParams['id'] = $dao->id;
+				$participantParams['status_id'] = $config->getCancelledParticipantStatusTypeId();
+				if (!CRM_Liveimport_DBUtils::countExistingDonationsForTeamMember($event_id, $dao->contact_id)) {
+					// Set show on website to false when there are no donations on this teammember. Otherwise we keep show on website.
+					$participantParams['custom_' . $config->getShowOnWebsiteCustomFieldId()] = 0; 		
+				}
+				$participantParams['custom_' . $config->getShowOnDonationFormCustomFieldId()] = 0;
+				civicrm_api3('Participant', 'create', $participantParams);	
+      }
+    } catch (Exception $ex){
+      Civi::log()->info($ex);
+    }
+    return TRUE;
   }
 
   public static function testProcess() {

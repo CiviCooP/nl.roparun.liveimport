@@ -69,9 +69,21 @@ class CRM_Liveimport_Form_Upload extends CRM_Core_Form {
       );
 
       $queue->createItem($task);
-
     }
+		
+		list($countSteps,$stepSize) = CRM_Liveimport_Process::calcFinishSteps();
+		for($i=0;$i<=$countSteps;$i++){
+			$task = new CRM_Queue_Task(
+        array(
+          'CRM_Liveimport_Process',
+          'processFinish'
+        ), //call back method
+        array(), //parameters,
+        "Finishing processing"
+      );
 
+      $queue->createItem($task);
+		}
 
     $url = CRM_Utils_System::url('civicrm/liveimport/uploadresult', 'reset=1');;
     $runner = new CRM_Queue_Runner(array(
