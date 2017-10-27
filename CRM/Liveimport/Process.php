@@ -46,8 +46,10 @@ class CRM_Liveimport_Process {
       $apiParams['id'] = $contact_id;
     } else {
     	// Try to find contact based on name and birth data
-    	$apiGetParams['birth_date'] = $dao->geboortedatum;
-	    CRM_Utils_Date::convertToDefaultDate($apiGetParams, 32, 'birth_date');
+    	if (!empty($dao->birth_date) && $dao->birth_date != '0001-01-01') {
+    		$apiGetParams['birth_date'] = $dao->geboortedatum;
+	    	CRM_Utils_Date::convertToDefaultDate($apiGetParams, 32, 'birth_date');
+    	}
 	    $apiGetParams['first_name'] = $dao->voornaam;
 	    $apiGetParams['middle_name'] = $dao->tussenvoegsel;
 	    $apiGetParams['last_name'] = CRM_Liveimport_DBUtils::formatName($dao->achternaam,$dao->meisjesnaamtussenvoegsel,$dao->meisjesnaam);
@@ -62,9 +64,11 @@ class CRM_Liveimport_Process {
 				// Do nothing contact not found.
 			}
     }
-
-    $apiParams['birth_date'] = $dao->geboortedatum;
-    CRM_Utils_Date::convertToDefaultDate($apiParams, 32, 'birth_date');
+		
+		if (!empty($dao->birth_date) && $dao->birth_date != '0001-01-01') { 
+    	$apiParams['birth_date'] = $dao->geboortedatum;
+    	CRM_Utils_Date::convertToDefaultDate($apiParams, 32, 'birth_date');
+		}
     $apiParams['first_name'] = $dao->voornaam;
     $apiParams['middle_name'] = $dao->tussenvoegsel;
     $apiParams['last_name'] = CRM_Liveimport_DBUtils::formatName($dao->achternaam,$dao->meisjesnaamtussenvoegsel,$dao->meisjesnaam);
