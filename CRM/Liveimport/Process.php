@@ -77,7 +77,7 @@ class CRM_Liveimport_Process {
     $apiParams['source'] = 'Liveimport';
     $apiParams['gender'] = CRM_Liveimport_DBUtils::translateGender($dao->geslacht);
 
-    // Is Iset hier wel zo'n goed idee (maakt het onmogelijk het veld leeg te maken
+    // Is Iset hier wel zo'n goed idee (maakt het onmogelijk het veld leeg te maken)
 
     if (isset($dao->waarschuwen_igv_nood)) {
       $apiParams['custom_' . $config->getWaarschuwenIgvNoodCustomFieldId()] = $dao->waarschuwen_igv_nood;
@@ -271,7 +271,7 @@ class CRM_Liveimport_Process {
 	public static function processFinish(CRM_Queue_TaskContext $ctx){
 		$config = CRM_Liveimport_Config::singleton();
 		$event_id = CRM_Liveimport_DBUtils::getCurrentRoparunEventId();
-		// Cancel all registration of teammebers who are not in the import feed.
+		// Cancel all registration of teammembers who are not in the import feed.
 		$sql = "SELECT civicrm_participant.id, civicrm_participant.contact_id 
 				FROM civicrm_participant
 				INNER JOIN {$config->getTeamMemberDataCustomGroupTableName()} team_member_data ON team_member_data.entity_id = civicrm_participant.id

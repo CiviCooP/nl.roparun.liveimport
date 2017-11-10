@@ -19,6 +19,11 @@
         {ts 1=$uploadSize}Maximum Upload File Size: %1 MB{/ts}
     </td>
   </tr>
+  <tr>
+    <td class="label">{$form.cancelRegistrations.label}</td>
+    <td>{$form.cancelRegistrations.html} <div class="description">Cancel de registratie van alle deelnemers die geen onderdeel zijn van het import bestand.</div>
+    </td>
+  </tr>
 </table>
 <div class="crm-submit-buttons">
 {include file="CRM/common/formButtons.tpl" location="bottom"}
