@@ -27,9 +27,7 @@ class CRM_Liveimport_Form_Upload extends CRM_Core_Form {
     )), 'maxfilesize', $uploadFileSize);
    // $this->addRule('uploadFile', ts('Input file must be in CSV format'), 'utf8File');
    // $this->addRule('uploadFile', ts('A valid file must be uploaded.'), 'uploadedfile');
-
-    $this->add('checkbox','cancelRegistrations','Cancel registratie');
-
+    
     $this->addButtons(array(
       array(
         'type' => 'submit',
@@ -39,12 +37,6 @@ class CRM_Liveimport_Form_Upload extends CRM_Core_Form {
     ));
 
     parent::buildQuickForm();
-  }
-
-  public function setDefaultValues(){
-    $defaults = array();
-    $defaults['cancelRegistrations'] = 1;
-    return $defaults;
   }
 
   public function preProcess(){
@@ -57,7 +49,6 @@ class CRM_Liveimport_Form_Upload extends CRM_Core_Form {
   }
 
   public function postProcess() {
-    $formValues = $this->controller->exportValues($this->_name);
 
     $queue = CRM_Queue_Service::singleton()->create(array(
       'type' => 'Sql',
@@ -81,18 +72,16 @@ class CRM_Liveimport_Form_Upload extends CRM_Core_Form {
       $queue->createItem($task);
     }
 
-    if(isset($formValues['cancelRegistrations'])&&$formValues['cancelRegistrations']) {
-      list($countSteps, $stepSize) = CRM_Liveimport_Process::calcFinishSteps();
-      for ($i = 0; $i <= $countSteps; $i++) {
-        $task = new CRM_Queue_Task([
-          'CRM_Liveimport_Process',
-          'processFinish'
-        ], //call back method
-          [], //parameters,
-          "Process Cancellations  ".$i*$stepSize);
+    list($countSteps, $stepSize) = CRM_Liveimport_Process::calcFinishSteps();
+    for ($i = 0; $i <= $countSteps; $i++) {
+      $task = new CRM_Queue_Task([
+        'CRM_Liveimport_Process',
+        'processFinish',
+      ], //call back method
+        [], //parameters,
+        "Process Cancellations  " . $i * $stepSize);
 
-        $queue->createItem($task);
-      }
+      $queue->createItem($task);
     }
 
     $url = CRM_Utils_System::url('civicrm/liveimport/uploadresult', 'reset=1');;
