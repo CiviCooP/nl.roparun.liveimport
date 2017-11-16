@@ -276,7 +276,7 @@ class CRM_Liveimport_Process {
 				FROM civicrm_participant
 				INNER JOIN {$config->getTeamMemberDataCustomGroupTableName()} team_member_data ON team_member_data.entity_id = civicrm_participant.id
 				WHERE civicrm_participant.role_id = %1 AND civicrm_participant.status_id = %2 AND civicrm_participant.event_id = %3
-				AND team_member_data.{$config->getTeammemberNrCustomFieldColumnName()} NOT IN (SELECT roparunid FROM import_livefeed WHERE processed = 'P')
+				AND team_member_data.{$config->getTeammemberNrCustomFieldColumnName()} NOT IN (SELECT roparunid FROM import_livefeed WHERE processed in ('F','P'))
 				LIMIT %4";
 		$params[1] = array($config->getParticipantRoleId(), 'Integer');
 		$params[2] = array($config->getRegisteredParticipantStatusTypeId(), 'Integer');
