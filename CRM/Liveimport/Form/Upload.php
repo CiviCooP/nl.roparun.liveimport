@@ -27,7 +27,7 @@ class CRM_Liveimport_Form_Upload extends CRM_Core_Form {
     )), 'maxfilesize', $uploadFileSize);
    // $this->addRule('uploadFile', ts('Input file must be in CSV format'), 'utf8File');
    // $this->addRule('uploadFile', ts('A valid file must be uploaded.'), 'uploadedfile');
-    
+
     $this->addButtons(array(
       array(
         'type' => 'submit',
