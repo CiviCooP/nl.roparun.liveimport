@@ -240,7 +240,8 @@ class CRM_Liveimport_Process {
 			}
 			
       $contact_id = CRM_Liveimport_Process::importContact($dao,$contact_id, $errors);
-      CRM_Liveimport_Process::importAddress($dao, $contact_id,$errors);
+      // Do not import addresses as Roparun Live exports empty address data.
+      //CRM_Liveimport_Process::importAddress($dao, $contact_id,$errors);
       CRM_Liveimport_Process::importPhone($dao, $contact_id,$errors);
       CRM_Liveimport_Process::importEmail($dao, $contact_id,$errors);
       CRM_Liveimport_Process::importParticipant($dao, $contact_id, $participant_id, $errors);
