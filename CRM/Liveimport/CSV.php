@@ -52,8 +52,8 @@ class CRM_Liveimport_CSV {
     $sql = NULL;
     $first = TRUE;
     $count = 0;
-    while ($row = fgetcsv($fd, 0, $fieldSeparator)) {
-
+		while (($line = fgets($fd)) !== false) {
+			$row = explode(';', $line);
       if (!$first) {
         $sql .= ', ';
       }
